@@ -37,3 +37,11 @@ class FileSystemPort(Protocol):
     def get_file_hash(self, *, path: str) -> str:
         """Get file hash for checking change."""
         ...
+
+
+class EmbeddingsPort(Protocol):
+    """Convert text data into numerical vector representations."""
+
+    def get_embeddings(self, *, texts: list[str]) -> list[list[float]]:
+        """Vectorize a list of strings into high-dimensional embeddings."""
+        ...
