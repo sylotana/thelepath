@@ -16,3 +16,4 @@ __pycache__/
 
 # User-specific data (test docs)
 backend/test_data/
+backend/qdrant_data

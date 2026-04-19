@@ -12,6 +12,30 @@ class Chunk:
     vector: list[float] = field(default_factory=list)
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
+    @classmethod
+    def create(
+        cls,
+        *,
+        content: str,
+        metadata: dict[str, Any] | None = None,
+        id: str | None = None,
+    ) -> "Chunk":
+        """TODO: Here you can add validation or default metadata."""
+        return cls(
+            content=content,
+            metadata=metadata or {},
+            id=id or str(uuid.uuid4()),
+        )
+
+    def copy_with_vector(self, *, vector: list[float]) -> "Chunk":
+        """Creates a copy of a chunk with a vector, preserving identity."""
+        return Chunk(
+            content=self.content,
+            metadata=self.metadata,
+            vector=vector,
+            id=self.id,
+        )
+
 
 @dataclass
 class Document:
@@ -47,7 +71,10 @@ class Document:
         )
 
     def split_into_chunks(
-        self, *, chunk_size: int, chunk_overlap: int
+        self,
+        *,
+        chunk_size: int = 500,
+        chunk_overlap: int = 50,
     ) -> None:
         """Split the document's content into smaller semantic chunks.
 
@@ -74,10 +101,9 @@ class Document:
 
             # Create a domain Chunk object.
             # UUID is generated automatically inside the Chunk class.
-            new_chunk = Chunk(
+            new_chunk = Chunk.create(
                 content=chunk_content,
                 metadata={
-                    "file_path": self.file_path,
                     "start_index": start,
                     "end_index": min(end, text_len),
                     **self.metadata,  # Spread general document metadata
@@ -91,3 +117,35 @@ class Document:
             # Guard against infinite loops if overlap >= chunk_size
             if chunk_size <= chunk_overlap:
                 break
+
+    def vectorize(self, *, vectors: list[list[float]]) -> None:
+        """TODO: add correct docstring."""
+        if len(vectors) != len(self.chunks):
+            raise ValueError(
+                "The number of vectors does not match the number of fragments."
+            )
+
+        self.chunks = [
+            c.copy_with_vector(vector=v) for c, v in zip(self.chunks, vectors)
+        ]
+
+    def ingest_text(
+        self, *, content: str, metadata: dict[str, Any] | None = None
+    ) -> None:
+        """TODO: add correct docstring."""
+        initial_metadata = {"file_path": self.file_path}
+        if metadata:
+            initial_metadata.update(metadata)
+
+        # Create one start chunk
+        self.chunks = [
+            Chunk.create(
+                content=content,
+                metadata=initial_metadata,
+            )
+        ]
+
+    @property
+    def text_batches(self) -> list[str]:
+        """Returns a list of texts of all fragments for vectorization."""
+        return [chunk.content for chunk in self.chunks]

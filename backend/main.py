@@ -1,37 +1,51 @@
 import sys
 from pathlib import Path
 
-# Adding src to sys.path to handle imports correctly if running as a script
+# Adding src to sys.path
 sys.path.append(str(Path(__file__).parent.parent))
 
 from src.application.use_cases.add_source import AddSourceToContextUseCase
+from src.infrastructure.adapters.fastembed import (
+    FastEmbedAdapter,
+)
 from src.infrastructure.adapters.file_system import LocalFileSystemAdapter
 from src.infrastructure.adapters.parser import SimpleParserAdapter
-from src.infrastructure.adapters.vector_store import InMemoryVectorStoreAdapter
+from src.infrastructure.adapters.vector_store import (
+    QdrantVectorStoreAdapter,
+)
 
 
 def bootstrap() -> None:
     """Composition Root: Wiring everything together."""
     # 1. Initialize Adapters (Infrastructure)
-    # We define supported extensions here
     file_system = LocalFileSystemAdapter(
-        supported_extensions={".txt", ".md", ".pdf"}
+        supported_extensions={".txt", ".md"}  # Keeping it simple for now
     )
-    vector_store = InMemoryVectorStoreAdapter()
+
+    # Using local storage for Qdrant so it persists in a folder
+    vector_store = QdrantVectorStoreAdapter(path="./qdrant_data")
+
+    # The "Smart" part
+    embeddings = FastEmbedAdapter(model_name="BAAI/bge-small-en-v1.5")
+
     parser = SimpleParserAdapter()
 
     # 2. Inject Adapters into Use Case (Application)
+    # Note: Ensure your Use Case __init__ now accepts embeddings_service!
     use_case = AddSourceToContextUseCase(
         file_system_gateway=file_system,
         vector_store=vector_store,
         parser_service=parser,
+        embeddings_service=embeddings,  # New Injection
     )
 
-    # 3. Simulate a call (In the future, this will be triggered via API/IPC)
-    # For testing, let's try to index some local folder or file
+    # 3. Execution
     print("--- Starting RAG Ingestion Process ---")
 
-    test_paths = ["./test_data"]  # Make sure this folder exists
+    test_paths = ["./test_data"]
+
+    # Create the folder if it doesn't exist so it doesn't crash
+    Path("./test_data").mkdir(exist_ok=True)
 
     result = use_case.execute(paths=test_paths)
 

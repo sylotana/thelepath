@@ -23,16 +23,17 @@
 Focus: Move from "dummy" text handling to actual mathematical representations.
 
 - **Task 1: Implement `FastEmbedAdapter`**
-    1. Add `fastembed` to dependencies.
-    2. Create `FastEmbedAdapter` in infrastructure.
-    3. Download and initialize a lightweight model (e.g., `BAAI/bge-small-en-v1.5`).
+    - [x] Add dependencies: fastembed has been added to pyproject.toml and locked in uv.lock.
+    - [x] Create Adapter: The `src/backend/infrastructure/adapters/fastembed.py` file has been created.
+    - [x] Initialize Model: Model initialization is implemented (defaulting to BAAI/bge-small-en-v1.5 or a similar lightweight model).
 
 - **Task 2: Upgrade Document Parsing**
-    1. Modify `ParserAdapter` to utilize the `split_into_chunks` method.
-    2. Define default `chunk_size` and `chunk_overlap`.
+    - [x] Utilize split_into_chunks: The method has been integrated into the Document domain entity.
+    - [x] Chunking Logic: Implemented text splitting with chunk_size and chunk_overlap, including infinite loop protection.
 
 - **Task 3: Implement Embedding Generation Use Case**
-    1. Update the ingestion pipeline to generate vectors for every chunk before saving them to the database.
+    - [x] Update the ingestion pipeline to generate vectors for every chunk before saving them to the database.
+    - [x] Deduplication: (Bonus!) Added hash checks and removal of stale vectors in Qdrant to prevent duplicate entries.
 
 ### Phase 2: Semantic Retrieval (Finding Information)
 
@@ -63,10 +64,12 @@ Focus: Connect a local LLM to answer questions based on retrieved data.
 
 ---
 
-## Next Session Checklist
+## Next Session Checklist (19.04.2026)
 
-- [ ] Install dependencies: `uv add fastembed`
-- [ ] Define `EmbeddingsPort`: Add the abstract interface to `domain/ports.py`.
-- [ ] Create `FastEmbedAdapter`: Implement the actual vector generation logic.
-- [ ] Update Ingestion Use Case: Ensure chunks are "vectorized" before being stored.
-- [ ] Run Quality Checks: `ruff` & `mypy` must stay green!
+Phase 1: Brain Surgery (Making the RAG "Smart")
+
+- [x] Install dependencies: `uv add fastembed`
+- [x] Define `EmbeddingsPort`: Add the abstract interface to `domain/ports.py`.
+- [x] Create `FastEmbedAdapter`: Implement the actual vector generation logic.
+- [x] Update Ingestion Use Case: Ensure chunks are "vectorized" before being stored.
+- [x] Run Quality Checks: `ruff` & `mypy` must stay green!

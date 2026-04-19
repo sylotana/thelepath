@@ -1,10 +1,8 @@
 import hashlib
 from pathlib import Path
 
-from src.domain.ports import FileSystemPort
 
-
-class LocalFileSystemAdapter(FileSystemPort):
+class LocalFileSystemAdapter:
     """TODO: add correct docstring."""
 
     def __init__(self, *, supported_extensions: set[str]) -> None:

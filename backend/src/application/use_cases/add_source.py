@@ -1,6 +1,11 @@
 from typing import Any
 
-from src.domain.ports import FileSystemPort, ParserPort, VectorStorePort
+from src.domain.ports import (
+    EmbeddingsPort,
+    FileSystemPort,
+    ParserPort,
+    VectorStorePort,
+)
 
 
 class AddSourceToContextUseCase:
@@ -12,11 +17,13 @@ class AddSourceToContextUseCase:
         file_system_gateway: FileSystemPort,
         vector_store: VectorStorePort,
         parser_service: ParserPort,
+        embeddings_service: EmbeddingsPort,
     ) -> None:
         """TODO: add correct docstring."""
         self.file_system = file_system_gateway
         self.vector_store = vector_store
         self.parser = parser_service
+        self.embeddings = embeddings_service
 
     def execute(self, *, paths: list[str]) -> dict[str, Any]:
         """Main scenario to add sources to the context."""
@@ -45,7 +52,21 @@ class AddSourceToContextUseCase:
                 path=path, file_hash=file_hash
             )
 
-            # 5. Save to the vector store
+            # 5. Domain logic: Chunking
+            document.split_into_chunks()
+
+            if not document.chunks:
+                continue
+
+            # 6. Get embeddings (batch)
+            vectors = self.embeddings.get_embeddings(
+                texts=document.text_batches
+            )
+
+            # 7. Update chunks use vectors
+            document.vectorize(vectors=vectors)
+
+            # 8. Save
             self.vector_store.index_document(document=document)
             processed_count += 1
 

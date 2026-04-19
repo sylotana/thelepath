@@ -45,3 +45,7 @@ class EmbeddingsPort(Protocol):
     def get_embeddings(self, *, texts: list[str]) -> list[list[float]]:
         """Vectorize a list of strings into high-dimensional embeddings."""
         ...
+
+    def get_query_embedding(self, *, text: str) -> list[float]:
+        """Vectorize a single query string for search."""
+        ...
