@@ -5,7 +5,11 @@ from typing import Any
 
 @dataclass(frozen=True)  # Make immutable for reliability
 class Chunk:
-    """TODO: add correct docstring."""
+    """Fundamental unit of text with its embedding and metadata.
+
+    This class serves as a Value Object in the domain, ensuring that processed
+    text units maintain their integrity and identity across the pipeline.
+    """
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -20,7 +24,16 @@ class Chunk:
         metadata: dict[str, Any] | None = None,
         id: str | None = None,
     ) -> "Chunk":
-        """TODO: Here you can add validation or default metadata."""
+        """Create a Chunk with automatic ID and metadata handling.
+
+        Args:
+            content: The raw text string to be stored.
+            metadata: Optional dictionary with source info, tags, etc.
+            id: Unique identifier. If None, a UUID is generated.
+
+        Returns:
+            A new immutable Chunk instance.
+        """
         return cls(
             content=content,
             metadata=metadata or {},
@@ -28,7 +41,18 @@ class Chunk:
         )
 
     def copy_with_vector(self, *, vector: list[float]) -> "Chunk":
-        """Creates a copy of a chunk with a vector, preserving identity."""
+        """Creates a new Chunk instance with an updated vector embedding.
+
+        Since the class is frozen (immutable), this method implements
+        the evolution of a Chunk when its vector representation is computed.
+
+        Args:
+            vector: A list of floats representing the text embedding.
+
+        Returns:
+            A new Chunk instance with the same identity
+            but updated vector data.
+        """
         return Chunk(
             content=self.content,
             metadata=self.metadata,
