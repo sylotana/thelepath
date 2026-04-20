@@ -63,7 +63,12 @@ class Chunk:
 
 @dataclass
 class Document:
-    """Domain entity representing a processed file."""
+    """Domain aggregate representing a processed document within the system.
+
+    This entity encapsulates file information, its content
+    segments (chunks), and associated metadata, serving as
+    the primary unit for indexing and retrieval.
+    """
 
     file_path: str
     file_name: str
@@ -81,7 +86,20 @@ class Document:
         file_hash: str,
         chunks: list[Chunk] | None = None,
     ) -> "Document":
-        """TODO: add correct docstring."""
+        """Initialize a new Document with integrity checks.
+
+        Args:
+            file_path: Absolute or relative path to the source file.
+            file_name: Human-readable name of the document.
+            file_hash: Unique content signature for change detection.
+            chunks: Optional pre-processed text segments.
+
+        Raises:
+            ValueError: If the provided file_path is empty or invalid.
+
+        Returns:
+            A validated Document entity.
+        """
         # In the future, this will use Result.ok(...) or Result.fail(...)
         # For now — basic validation
         if not file_path:
@@ -100,10 +118,15 @@ class Document:
         chunk_size: int = 500,
         chunk_overlap: int = 50,
     ) -> None:
-        """Split the document's content into smaller semantic chunks.
+        """Partition the document content into overlapping semantic segments.
 
-        This is a core business rule for RAG: determining how data
-        is fragmented for vector search.
+        This method implements the core RAG fragmentation logic, ensuring that
+        large text bodies are indexed in searchable units while preserving
+        context through configurable overlap.
+
+        Args:
+            chunk_size: Maximum number of characters per chunk.
+            chunk_overlap: Number of characters to overlap between segments.
         """
         # Collect text from existing chunks (e.g.,
         # if a parser already populated them)
@@ -116,6 +139,8 @@ class Document:
         # Clear existing chunks to replace them with the new fragmentation
         self.chunks = []
 
+        # Effective step size to prevent infinite loops and ensure progress
+        step = max(1, chunk_size - chunk_overlap)
         start = 0
         text_len = len(full_text)
 
@@ -136,17 +161,26 @@ class Document:
             self.chunks.append(new_chunk)
 
             # Shift the window using chunk_overlap
-            start += chunk_size - chunk_overlap
-
-            # Guard against infinite loops if overlap >= chunk_size
-            if chunk_size <= chunk_overlap:
-                break
+            start += step
 
     def vectorize(self, *, vectors: list[list[float]]) -> None:
-        """TODO: add correct docstring."""
+        """Align vector embeddings with document chunks.
+
+        This method updates the document's segments with their numerical
+        representations, enabling downstream vector similarity searches.
+
+        Args:
+            vectors: A sequence of float lists, where each list represents
+                an embedding for a chunk at the same index.
+
+        Raises:
+            ValueError: If the count of vectors does not align with the
+                current number of chunks, ensuring data consistency.
+        """
         if len(vectors) != len(self.chunks):
             raise ValueError(
-                "The number of vectors does not match the number of fragments."
+                f"Vector alignment mismatch: received {len(vectors)},",
+                f"expected {len(self.chunks)}.",
             )
 
         self.chunks = [
@@ -156,7 +190,16 @@ class Document:
     def ingest_text(
         self, *, content: str, metadata: dict[str, Any] | None = None
     ) -> None:
-        """TODO: add correct docstring."""
+        """Ingest raw text into the document by creating an initial chunk.
+
+        This method initializes the document's content state, merging
+        provided metadata with file-specific information before
+        creating the primary data segment.
+
+        Args:
+            content: The raw string content to be processed.
+            metadata: Optional additional context (e.g., author, source, tags).
+        """
         initial_metadata = {"file_path": self.file_path}
         if metadata:
             initial_metadata.update(metadata)
@@ -171,5 +214,12 @@ class Document:
 
     @property
     def text_batches(self) -> list[str]:
-        """Returns a list of texts of all fragments for vectorization."""
+        """Extract a flattened list of text content from all document segments.
+
+        This property is primarily used by embedding services to perform
+        batch vectorization without exposing the underlying Chunk entities.
+
+        Returns:
+            A list of raw strings representing the content of each chunk.
+        """
         return [chunk.content for chunk in self.chunks]
